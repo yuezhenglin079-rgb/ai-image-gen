@@ -1,11 +1,10 @@
 // 小扳手 AI 生图 - 后端代理接口
-// GPT-image2: 同步返回（快）
-// Nano Banana: 异步返回（需要轮询）
+// OpenAI 格式: /v1/images/generations (同步)
+// Nano Banana:  /v1/videos (异步，需轮询)
 
-const BASE_URL = 'https://xibapi.com';
+const BASE = 'https://xibapi.com';
 
 module.exports = async (req, res) => {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -15,7 +14,7 @@ module.exports = async (req, res) => {
   const apiKey = process.env.XIAOBANSHOU_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API 密钥未配置' });
 
-  const { model, prompt, size, aspect_ratio, images } = req.body || {};
+  const { model, prompt, size, aspect_ratio, images, n } = req.body || {};
   if (!model) return res.status(400).json({ error: '缺少 model 参数' });
   if (!prompt) return res.status(400).json({ error: '缺少 prompt 参数' });
 
@@ -24,18 +23,27 @@ module.exports = async (req, res) => {
     if (model === 'image2') {
       const body = { model: 'image2', prompt };
       if (size) body.size = size;
+      if (n) body.n = n;
       if (images?.length) body.image = images;
 
-      const resp = await fetch(`${BASE_URL}/v1/images/generations`, {
+      const resp = await fetch(`${BASE}/v1/images/generations`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
       const data = await resp.json();
+
+      // b64_json 是裸 base64，加前缀
+      if (data?.data) {
+        data.data = data.data.map(item => ({
+          ...item,
+          b64_json: item.b64_json
+            ? (item.b64_json.startsWith('data:') ? item.b64_json : `data:image/png;base64,${item.b64_json}`)
+            : item.b64_json
+        }));
+      }
+
       return res.status(resp.ok ? 200 : resp.status).json(data);
     }
 
@@ -44,12 +52,9 @@ module.exports = async (req, res) => {
       const body = { model, prompt, aspect_ratio: aspect_ratio || '1:1' };
       if (images?.length) body.images = images;
 
-      const resp = await fetch(`${BASE_URL}/v1/videos`, {
+      const resp = await fetch(`${BASE}/v1/videos`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
 
