@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 绘 - AI 图片生成</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Reset */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:#08080d;color:#e4e4ed;
+  min-height:100vh;line-height:1.6;
+  -webkit-font-smoothing:antialiased
+}
+a{color:#818cf8;text-decoration:none}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:#0d0d14}
+::-webkit-scrollbar-thumb{background:#25253a;border-radius:3px}
+
+/* Layout */
+.container{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* Header */
+header{
+  background:rgba(8,8,13,.85);border-bottom:1px solid #16161f;
+  position:sticky;top:0;z-index:100;
+  padding:14px 0;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)
+}
+header .container{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700;color:#e4e4ed}
+.logo-icon{
+  width:32px;height:32px;
+  background:linear-gradient(135deg,#818cf8,#6366f1);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:16px;color:#fff
+}
+.logo small{font-size:12px;font-weight:400;color:#5a5a70;margin-left:2px}
+header .right{display:flex;align-items:center;gap:14px;font-size:13px;color:#6b6b80}
+
+/* Ad Banner */
+.ad-banner{
+  background:#0e0e18;border:1px dashed #1e1e2e;border-radius:10px;
+  padding:14px;margin:16px auto;max-width:700px;
+  display:flex;align-items:center;justify-content:center;
+  min-height:70px;color:#3d3d55;font-size:12px;letter-spacing:.4px;
+  text-align:center;text-transform:uppercase;transition:border-color .25s;cursor:pointer
+}
+.ad-banner:hover{border-color:#2e2e44}
+
+/* Main Layout */
+.page-layout{
+  display:grid;grid-template-columns:380px 1fr;gap:28px;
+  padding:24px 0 48px;align-items:start
+}
+@media(max-width:900px){.page-layout{grid-template-columns:1fr}}
+
+/* Controls Panel */
+.controls-panel{
+  background:#0d0d16;border:1px solid #1a1a26;border-radius:16px;
+  padding:24px;position:sticky;top:80px
+}
+.controls-panel h2{
+  font-size:15px;font-weight:600;color:#c4c4d0;margin-bottom:18px
+}
+.form-group{margin-bottom:16px}
+.form-group label{
+  display:block;font-size:13px;font-weight:500;color:#8a8aa0;margin-bottom:6px
+}
+
+/* Model Selector */
+.model-options{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px
+}
+.model-btn{
+  padding:8px 10px;border-radius:8px;
+  background:#12121c;border:1px solid #1e1e2a;color:#7a7a90;
+  font-size:12px;font-weight:500;font-family:inherit;
+  cursor:pointer;transition:all .2s;text-align:center;line-height:1.3
+}
+.model-btn:hover{background:#181826;color:#9d9db5}
+.model-btn.active{
+  background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(129,140,248,.1));
+  border-color:#4f46e5;color:#a5b4fc
+}
+.model-btn small{display:block;font-size:10px;font-weight:400;color:#5a5a70;margin-top:2px}
+.model-btn.active small{color:#7a7aad}
+.model-btn.span-2{grid-column:1/-1}
+
+/* Prompt Textarea */
+.prompt-wrap{position:relative}
+.prompt-wrap textarea{
+  width:100%;padding:12px 14px;min-height:100px;resize:vertical;
+  background:#12121c;border:1px solid #1e1e2a;border-radius:10px;
+  color:#e4e4ed;font-size:14px;font-family:inherit;line-height:1.5;
+  outline:none;transition:border-color .25s
+}
+.prompt-wrap textarea:focus{border-color:#4f46e5}
+.prompt-wrap textarea::placeholder{color:#4a4a60}
+.char-count{
+  position:absolute;right:10px;bottom:8px;
+  font-size:11px;color:#3d3d50;pointer-events:none
+}
+
+/* Size Selector */
+.size-options{display:flex;flex-wrap:wrap;gap:6px}
+.size-btn{
+  padding:6px 14px;border-radius:6px;
+  background:#12121c;border:1px solid #1e1e2a;color:#6b6b80;
+  font-size:12px;font-family:inherit;cursor:pointer;
+  transition:all .2s
+}
+.size-btn:hover{background:#181826;color:#9d9db5}
+.size-btn.active{background:rgba(99,102,241,.15);border-color:#4f46e5;color:#a5b4fc}
+.size-btn .icon{font-size:14px;display:block;margin-bottom:2px}
+
+/* Generate Button */
+.btn-generate{
+  width:100%;padding:13px;
+  background:linear-gradient(135deg,#6366f1,#818cf8);
+  border:none;border-radius:10px;color:#fff;
+  font-size:15px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:opacity .25s,transform .15s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:20px
+}
+.btn-generate:hover{opacity:.9;transform:translateY(-1px)}
+.btn-generate:active{transform:translateY(0)}
+.btn-generate:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-generate .spinner{
+  width:18px;height:18px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;
+  display:none
+}
+.btn-generate.loading .spinner{display:block}
+.btn-generate.loading .btn-text{opacity:.7}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Credit Display */
+.credit-info{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;color:#4a4a60;margin-top:12px;justify-content:center
+}
+.credit-info strong{color:#6b6b80}
+
+/* Results Panel */
+.results-panel{min-height:400px}
+.results-panel .empty-state{
+  border:1px dashed #1a1a26;border-radius:16px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:400px;color:#3d3d50;text-align:center;padding:20px
+}
+.results-panel .empty-state svg{width:48px;height:48px;margin-bottom:14px;opacity:.3}
+.results-panel .empty-state h3{font-size:16px;font-weight:600;color:#5a5a70;margin-bottom:4px}
+.results-panel .empty-state p{font-size:13px;color:#3d3d50}
+
+/* Image Result */
+.result-card{
+  background:#0d0d16;border:1px solid #1a1a26;border-radius:16px;
+  overflow:hidden
+}
+.result-card .img-wrap{
+  background:#0a0a0f;display:flex;align-items:center;justify-content:center;
+  padding:0;position:relative;min-height:300px
+}
+.result-card .img-wrap img{
+  max-width:100%;max-height:600px;display:block;
+  object-fit:contain
+}
+.result-card .img-wrap .loading-overlay{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;background:rgba(8,8,13,.7);color:#5a5a70
+}
+.result-card .img-wrap .loading-overlay .pulse{
+  width:40px;height:40px;border:3px solid #1e1e2a;border-top-color:#6366f1;
+  border-radius:50%;animation:spin .8s linear infinite
+}
+.result-card .img-wrap .loading-overlay .status-text{font-size:13px}
+.result-card .img-wrap .loading-overlay .progress-bar{
+  width:200px;height:4px;background:#1a1a26;border-radius:2px;overflow:hidden
+}
+.result-card .img-wrap .loading-overlay .progress-bar .fill{
+  height:100%;background:linear-gradient(90deg,#6366f1,#818cf8);
+  border-radius:2px;transition:width .3s
+}
+.result-card .meta{
+  padding:14px 18px;border-top:1px solid #1a1a26;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  font-size:12px;color:#5a5a70
+}
+.result-card .meta .left{display:flex;align-items:center;gap:10px}
+.result-card .meta .model-badge{
+  padding:2px 8px;border-radius:4px;background:#12121c;
+  border:1px solid #1e1e2a;font-size:11px;color:#7a7a90
+}
+.result-card .actions{display:flex;gap:8px}
+.result-card .actions button{
+  padding:6px 14px;border-radius:6px;
+  background:#12121c;border:1px solid #1e1e2a;
+  color:#8a8aa0;font-size:12px;font-family:inherit;
+  cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px
+}
+.result-card .actions button:hover{background:#1a1a26;color:#a5b4fc;border-color:#2a2a3e}
+
+/* History Grid */
+.history-section{margin-top:24px}
+.history-section h3{
+  font-size:14px;font-weight:600;color:#7a7a90;margin-bottom:12px
+}
+.history-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:8px
+}
+.history-grid .thumb{
+  border-radius:8px;overflow:hidden;cursor:pointer;
+  border:1px solid #1a1a26;transition:border-color .2s;
+  aspect-ratio:1;position:relative
+}
+.history-grid .thumb:hover{border-color:#3a3a50}
+.history-grid .thumb img{
+  width:100%;height:100%;object-fit:cover;display:block
+}
+.history-grid .thumb .thumb-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.5);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .2s;color:#fff;font-size:12px
+}
+.history-grid .thumb:hover .thumb-overlay{opacity:1}
+
+/* Error */
+.error-msg{
+  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
+  border-radius:10px;padding:12px 16px;color:#fca5a5;
+  font-size:13px;margin-top:12px
+}
+
+/* Footer */
+footer{
+  border-top:1px solid #16161f;padding:28px 0;
+  text-align:center;font-size:12px;color:#4a4a60
+}
+footer a{color:#6b6b80}
+footer a:hover{color:#a5b4fc}
+
+/* Ad Inline */
+.ad-inline{
+  background:#0e0e18;border:1px dashed #1e1e2e;border-radius:10px;
+  padding:12px;margin-top:16px;
+  display:flex;align-items:center;justify-content:center;
+  min-height:60px;color:#3d3d55;font-size:11px;text-transform:uppercase;
+  cursor:pointer;text-align:center;letter-spacing:.3px
+}
+.ad-inline:hover{border-color:#2e2e44}
+
+/* Animations */
+.fade-in{animation:fadeIn .35s ease both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Responsive */
+@media(max-width:768px){
+  .container{padding:0 14px}
+  .controls-panel{padding:18px;position:static}
+  .model-options{grid-template-columns:1fr 1fr}
+  .result-card .img-wrap{min-height:200px}
+  .result-card .img-wrap img{max-height:400px}
+  .result-card .meta{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="container">
+    <a href="#" class="logo">
+      <span class="logo-icon">✦</span>
+      AI 绘 <small>图片生成</small>
+    </a>
+    <div class="right">
+      <span id="genCount">已生成 0 张</span>
+    </div>
+  </div>
+</header>
+
+<!-- Ad Banner -->
+<div class="container">
+  <div class="ad-banner" onclick="alert('📢 广告位招租 · 联系：ad@ainav.example')">
+    📢 广告位招租
+  </div>
+</div>
+
+<main class="container">
+  <div class="page-layout">
+
+    <!-- Left: Controls -->
+    <div class="controls-panel">
+      <h2>生成图片</h2>
+
+      <div class="form-group">
+        <label>选择模型</label>
+        <div class="model-options" id="modelOptions">
+          <button class="model-btn active" data-model="image2">
+            GPT-image2
+            <small>OpenAI 格式 · 快速</small>
+          </button>
+          <button class="model-btn" data-model="nano_banana_2">
+            Nano Banana 2
+            <small>标准版 · 高画质</small>
+          </button>
+          <button class="model-btn" data-model="nano_banana_pro-1K">
+            Nano Banana Pro
+            <small>1K 分辨率</small>
+          </button>
+          <button class="model-btn" data-model="nano_banana_pro-2K">
+            Nano Banana Pro
+            <small>2K 分辨率</small>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="prompt">描述你想要的画面</label>
+        <div class="prompt-wrap">
+          <textarea id="prompt" placeholder="例如：一只可爱的橘猫坐在窗边，夕阳洒在它身上，温暖的光影，摄影风格..."></textarea>
+          <span class="char-count" id="charCount">0/10000</span>
+        </div>
+      </div>
+
+      <div class="form-group" id="sizeGroup">
+        <label>尺寸</label>
+        <div class="size-options" id="sizeOptions">
+          <button class="size-btn active" data-size="1024x1024"><span class="icon">▢</span> 1:1</button>
+          <button class="size-btn" data-size="1024x1792"><span class="icon">▯</span> 9:16 竖屏</button>
+          <button class="size-btn" data-size="1792x1024"><span class="icon">▬</span> 16:9 横屏</button>
+        </div>
+      </div>
+
+      <div class="form-group" id="ratioGroup" style="display:none">
+        <label>画面比例</label>
+        <div class="size-options" id="ratioOptions">
+          <button class="size-btn active" data-ratio="1:1">1:1</button>
+          <button class="size-btn" data-ratio="9:16">9:16 竖屏</button>
+          <button class="size-btn" data-ratio="16:9">16:9 横屏</button>
+          <button class="size-btn" data-ratio="auto">自动</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>生成数量</label>
+        <div class="size-options">
+          <button class="size-btn active" data-n="1">1 张</button>
+          <button class="size-btn" data-n="2">2 张</button>
+          <button class="size-btn" data-n="4">4 张</button>
+        </div>
+      </div>
+
+      <button class="btn-generate" id="btnGenerate" onclick="generate()">
+        <span class="spinner"></span>
+        <span class="btn-text">✨ 生成图片</span>
+      </button>
+
+      <div class="credit-info">
+        <span>API 密钥由你提供，调用按量计费</span>
+      </div>
+    </div>
+
+    <!-- Right: Results -->
+    <div class="results-panel" id="resultsPanel">
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <h3>输入描述，生成图片</h3>
+        <p>选择模型和尺寸，在左侧输入描述后点击生成</p>
+      </div>
+      <div id="resultArea"></div>
+      <div id="historyArea"></div>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <p><a href="#">AI 绘</a> · 基于小扳手 API · © 2026</p>
+  </div>
+</footer>
+
+<script>
+// ===== State =====
+let currentModel = 'image2';
+let currentSize = '1024x1024';
+let currentRatio = '1:1';
+let currentN = 1;
+let totalGenerated = 0;
+let isGenerating = false;
+let history = [];
+
+// ===== DOM refs =====
+const promptEl = document.getElementById('prompt');
+const charCount = document.getElementById('charCount');
+const btnGen = document.getElementById('btnGenerate');
+const resultArea = document.getElementById('resultArea');
+const emptyState = document.getElementById('emptyState');
+const historyArea = document.getElementById('historyArea');
+const genCount = document.getElementById('genCount');
+const sizeGroup = document.getElementById('sizeGroup');
+const ratioGroup = document.getElementById('ratioGroup');
+
+// ===== Character count =====
+promptEl.addEventListener('input', () => {
+  const len = promptEl.value.length;
+  charCount.textContent = `${len}/10000`;
+  charCount.style.color = len > 9000 ? '#ef4444' : '#3d3d50';
+});
+
+// ===== Model selection =====
+document.querySelectorAll('#modelOptions .model-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#modelOptions .model-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentModel = btn.dataset.model;
+
+    // Swap size vs ratio controls
+    if (currentModel === 'image2') {
+      sizeGroup.style.display = '';
+      ratioGroup.style.display = 'none';
+    } else {
+      sizeGroup.style.display = 'none';
+      ratioGroup.style.display = '';
+    }
+  });
+});
+
+// ===== Size selection =====
+document.querySelectorAll('#sizeOptions .size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#sizeOptions .size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentSize = btn.dataset.size;
+  });
+});
+
+// ===== Ratio selection =====
+document.querySelectorAll('#ratioOptions .size-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#ratioOptions .size-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentRatio = btn.dataset.ratio;
+  });
+});
+
+// ===== Count selection =====
+document.querySelectorAll('[data-n]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-n]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentN = parseInt(btn.dataset.n);
+  });
+});
+
+// ===== Generate =====
+async function generate() {
+  const prompt = promptEl.value.trim();
+  if (!prompt) {
+    promptEl.focus();
+    promptEl.style.borderColor = '#ef4444';
+    setTimeout(() => promptEl.style.borderColor = '', 1500);
+    return;
+  }
+  if (isGenerating) return;
+
+  isGenerating = true;
+  btnGen.classList.add('loading');
+  btnGen.disabled = true;
+  emptyState.style.display = 'none';
+
+  // Show loading
+  const isAsync = currentModel.startsWith('nano_banana');
+  resultArea.innerHTML = `
+    <div class="result-card fade-in">
+      <div class="img-wrap">
+        <div class="loading-overlay">
+          <div class="pulse"></div>
+          <div class="status-text">${isAsync ? '任务已提交，等待生成...' : '正在生成...'}</div>
+          ${isAsync ? '<div class="progress-bar"><div class="fill" id="progressFill" style="width:0%"></div></div>' : ''}
+        </div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const body = { model: currentModel, prompt };
+    if (currentModel === 'image2') {
+      body.size = currentSize;
+      body.n = currentN;
+    } else {
+      body.aspect_ratio = currentRatio;
+    }
+
+    const resp = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      throw new Error(data.error || `请求失败 (${resp.status})`);
+    }
+
+    if (currentModel === 'image2') {
+      // Sync - base64 in data[].b64_json
+      if (!data.data || !data.data.length) throw new Error('返回数据为空');
+      displaySyncResults(data.data);
+    } else {
+      // Async - task ID, start polling
+      if (!data.id) throw new Error('任务提交失败，未获取到任务ID');
+      await pollTask(data.id);
+    }
+  } catch (err) {
+    resultArea.innerHTML = `
+      <div class="result-card fade-in">
+        <div class="img-wrap" style="min-height:200px;padding:40px">
+          <div class="error-msg">${err.message}</div>
+        </div>
+      </div>
+    `;
+  } finally {
+    isGenerating = false;
+    btnGen.classList.remove('loading');
+    btnGen.disabled = false;
+  }
+}
+
+// ===== Poll async task =====
+async function pollTask(taskId) {
+  let completed = false;
+  let attempts = 0;
+  const maxAttempts = 120; // ~5 minutes max
+
+  while (!completed && attempts < maxAttempts) {
+    await new Promise(r => setTimeout(r, 2000)); // poll every 2s
+    attempts++;
+
+    try {
+      const resp = await fetch(`/api/query?id=${taskId}`);
+      const data = await resp.json();
+
+      if (!resp.ok) throw new Error(data.error || '查询失败');
+
+      // Update progress
+      const fill = document.getElementById('progressFill');
+      if (fill && data.progress != null) fill.style.width = Math.min(data.progress, 100) + '%';
+
+      const statusEl = document.querySelector('.status-text');
+      if (statusEl) {
+        if (data.status === 'queued') statusEl.textContent = '排队中...';
+        else if (data.status === 'processing') statusEl.textContent = `生成中 ${data.progress || 0}%`;
+        else if (data.status === 'completed') statusEl.textContent = '生成完成 ✓';
+        else if (data.status === 'failed') statusEl.textContent = '生成失败';
+      }
+
+      if (data.status === 'completed') {
+        completed = true;
+        displayAsyncResults(data);
+        return;
+      }
+
+      if (data.status === 'failed') {
+        throw new Error(data.error?.message || data.error || '生成失败');
+      }
+    } catch (err) {
+      if (completed) return;
+      throw err;
+    }
+  }
+
+  if (!completed) throw new Error('任务超时，请稍后查询');
+}
+
+// ===== Display results (sync) =====
+function displaySyncResults(items) {
+  const images = items.map(item => {
+    const b64 = item.b64_json || item.url;
+    const src = b64.startsWith('data:') ? b64 : (b64.startsWith('http') ? b64 : `data:image/png;base64,${b64}`);
+    return src;
+  });
+
+  totalGenerated += images.length;
+  updateStats();
+
+  // Add to history
+  images.forEach(src => history.unshift({ src, prompt: promptEl.value.trim(), model: currentModel }));
+
+  renderResults(images);
+  renderHistory();
+}
+
+// ===== Display results (async) =====
+function displayAsyncResults(data) {
+  const url = data.url;
+  if (!url) throw new Error('生成完成但未返回图片地址');
+
+  totalGenerated++;
+  updateStats();
+  history.unshift({ src: url, prompt: promptEl.value.trim(), model: currentModel });
+
+  renderResults([url]);
+  renderHistory();
+}
+
+// ===== Render results =====
+function renderResults(images) {
+  let html = '';
+  images.forEach((src, i) => {
+    const promptShort = promptEl.value.trim().slice(0, 40) + (promptEl.value.trim().length > 40 ? '...' : '');
+    html += `
+      <div class="result-card fade-in" style="animation-delay:${i*80}ms;${i>0?'margin-top:16px':''}">
+        <div class="img-wrap">
+          <img src="${src}" alt="生成图片" loading="lazy" onload="this.style.opacity=1" style="opacity:0;transition:opacity .3s">
+        </div>
+        <div class="meta">
+          <div class="left">
+            <span class="model-badge">${currentModel === 'image2' ? 'GPT-image2' : currentModel}</span>
+            <span>${currentModel === 'image2' ? currentSize : currentRatio}</span>
+          </div>
+          <div class="actions">
+            <button onclick="window.open('${src}','_blank')">🖼 查看</button>
+            <button onclick="downloadImage('${src}', 'ai-${Date.now()}-${i}')">⬇ 下载</button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  resultArea.innerHTML = html;
+}
+
+// ===== Download =====
+function downloadImage(src, name) {
+  const a = document.createElement('a');
+  a.href = src;
+  a.download = `${name}.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ===== History =====
+function renderHistory() {
+  if (!history.length) return;
+  let html = `<div class="history-section"><h3>历史记录</h3><div class="history-grid">`;
+  history.slice(0, 12).forEach((item, i) => {
+    const label = item.prompt.slice(0, 15) + (item.prompt.length > 15 ? '...' : '');
+    html += `
+      <div class="thumb fade-in" style="animation-delay:${i*30}ms" onclick="viewImage('${item.src}')">
+        <img src="${item.src}" alt="${item.prompt}" loading="lazy">
+        <div class="thumb-overlay">查看</div>
+      </div>
+    `;
+  });
+  html += `</div></div>`;
+  historyArea.innerHTML = html;
+}
+
+function viewImage(src) {
+  const img = new Image();
+  img.onload = () => {
+    resultArea.innerHTML = `
+      <div class="result-card fade-in">
+        <div class="img-wrap">
+          <img src="${src}" style="max-height:600px">
+        </div>
+        <div class="meta">
+          <div class="left"><span class="model-badge">历史记录</span></div>
+          <div class="actions">
+            <button onclick="window.open('${src}','_blank')">🖼 查看</button>
+            <button onclick="downloadImage('${src}', 'ai-${Date.now()}')">⬇ 下载</button>
+          </div>
+        </div>
+      </div>
+    `;
+  };
+  img.src = src;
+}
+
+// ===== Stats =====
+function updateStats() {
+  genCount.textContent = `已生成 ${totalGenerated} 张`;
+}
+
+// ===== Keyboard shortcut =====
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    generate();
+  }
+});
+</script>
+</body>
+</html>
