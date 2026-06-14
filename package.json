@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "description": "AI 图片生成网站 - 基于小扳手 API",
   "private": true,
+  "scripts": {
+    "build": "echo done"
+  },
   "engines": { "node": "18.x" }
 }
