@@ -1,0 +1,9 @@
+{
+  "name": "ai-image-gen",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo done"
+  },
+  "engines": { "node": "24.x" }
+}

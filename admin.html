@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>管理后台 - AI 绘</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#08080d;color:#e4e4ed;min-height:100vh;padding:32px}
+.container{max-width:800px;margin:0 auto}
+h1{font-size:22px;font-weight:700;margin-bottom:24px}
+.card{background:#0d0d16;border:1px solid #1a1a26;border-radius:12px;padding:24px;margin-bottom:20px}
+.card h2{font-size:15px;font-weight:600;color:#c4c4d0;margin-bottom:16px}
+.form-row{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.form-row input,.form-row select{padding:10px 14px;background:#12121c;border:1px solid #1e1e2a;border-radius:8px;color:#e4e4ed;font-size:14px;font-family:inherit;outline:none;flex:1;min-width:120px}
+.form-row input:focus{border-color:#6366f1}
+.btn{background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn-sm{background:#1a1a26;border:1px solid #2a2a3a;padding:6px 12px;font-size:12px;cursor:pointer;color:#9d9db5;border-radius:6px}
+.btn-sm:hover{background:#22222e}
+.codes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:12px}
+.code-item{padding:8px 12px;background:#12121c;border:1px solid #1e1e2a;border-radius:6px;font-family:monospace;font-size:12px;text-align:center;cursor:pointer;transition:border-color .2s;color:#a5b4fc;word-break:break-all}
+.code-item:hover{border-color:#6366f1}
+.code-item.used{color:#5a5a70;border-color:#1a1a26}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181826;border:1px solid #2a2a3e;border-radius:8px;padding:12px 20px;font-size:13px;color:#e4e4ed;z-index:100;display:none}
+.login-box{max-width:360px;margin:80px auto}
+.login-box input{width:100%;padding:12px 14px;background:#12121c;border:1px solid #1e1e2a;border-radius:8px;color:#e4e4ed;font-size:14px;font-family:inherit;outline:none;margin-bottom:12px}
+.login-box input:focus{border-color:#6366f1}
+.login-box .btn{width:100%;margin-top:4px}
+.hidden{display:none}
+.status-text{font-size:12px;color:#5a5a70;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="loginBox" class="login-box">
+    <h1 style="text-align:center;margin-bottom:20px">管理后台</h1>
+    <input type="password" id="adminKeyInput" placeholder="输入管理员密码">
+    <button class="btn" onclick="login()">进入</button>
+    <p class="status-text" style="text-align:center">首次使用请在 Vercel 环境变量中设置 ADMIN_SECRET_KEY</p>
+  </div>
+  <div id="adminPanel" class="hidden">
+    <h1>📊 管理后台 <span id="loginStatus" style="font-size:13px;font-weight:400;color:#5a5a70;margin-left:12px"></span></h1>
+    <div class="card">
+      <h2>生成激活码</h2>
+      <div class="form-row">
+        <input type="number" id="codeCount" value="5" min="1" max="100" style="max-width:80px">
+        <select id="codeCredits">
+          <option value="10">10 次 (体验)</option>
+          <option value="30" selected>30 次 (小包)</option>
+          <option value="100">100 次 (中包)</option>
+          <option value="300">300 次 (大包)</option>
+          <option value="500">500 次 (超大包)</option>
+        </select>
+        <button class="btn" onclick="genCodes()">生成</button>
+      </div>
+      <div id="codesResult"></div>
+    </div>
+    <div class="card">
+      <h2>定价参考</h2>
+      <table style="width:100%;font-size:13px;border-collapse:collapse">
+        <tr><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #1a1a26;color:#6b6b80">套餐</th><th style="text-align:right;padding:6px 8px;border-bottom:1px solid #1a1a26;color:#6b6b80">价格</th><th style="text-align:right;padding:6px 8px;border-bottom:1px solid #1a1a26;color:#6b6b80">张数</th></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #0d0d16">尝鲜包</td><td style="text-align:right;padding:6px 8px;border-bottom:1px solid #0d0d16">9.9 元</td><td style="text-align:right;padding:6px 8px;border-bottom:1px solid #0d0d16">15 张</td></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #0d0d16">畅享包</td><td style="text-align:right;padding:6px 8px;border-bottom:1px solid #0d0d16">19.9 元</td><td style="text-align:right;padding:6px 8px;border-bottom:1px solid #0d0d16">40 张</td></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #0d0d16">超值包</td><td style="text-align:right;padding:6px 8px;border-bottom:1px solid #0d0d16">49.9 元</td><td style="text-align:right;padding:6px 8px;border-bottom:1px solid #0d0d16">120 张</td></tr>
+        <tr><td style="padding:6px 8px">专业包</td><td style="text-align:right;padding:6px 8px">99 元</td><td style="text-align:right;padding:6px 8px">300 张</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+const ADMIN_KEY = localStorage.getItem('admin_token') || '';
+if (ADMIN_KEY) document.getElementById('adminPanel').classList.remove('hidden');
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+function login() {
+  const key = document.getElementById('adminKeyInput').value;
+  localStorage.setItem('admin_token', key);
+  document.getElementById('adminPanel').classList.remove('hidden');
+  document.getElementById('loginBox').style.display = 'none';
+  document.getElementById('loginStatus').textContent = '已登录';
+  showToast('登录成功');
+}
+
+async function genCodes() {
+  const count = parseInt(document.getElementById('codeCount').value) || 1;
+  const credits = parseInt(document.getElementById('codeCredits').value) || 30;
+  const key = localStorage.getItem('admin_token');
+  try {
+    const resp = await fetch('/api/admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ action: 'gen-codes', count, credits }),
+    });
+    const data = await resp.json();
+    if (data.error) return showToast('错误: ' + data.error);
+    const el = document.getElementById('codesResult');
+    el.innerHTML = '<div style="margin-top:8px;font-size:12px;color:#6b6b80;margin-bottom:8px">点击激活码可复制</div><div class="codes-grid">' +
+      data.codes.map(c => `<div class="code-item" onclick="copyCode('${c}')">${c}</div>`).join('') + '</div>';
+    showToast(`成功生成 ${data.codes.length} 个${credits}次激活码`);
+  } catch(e) {
+    showToast('请求失败: ' + e.message);
+  }
+}
+
+function copyCode(code) {
+  navigator.clipboard.writeText(code).then(() => showToast('已复制: ' + code));
+}
+</script>
+</body>
+</html>

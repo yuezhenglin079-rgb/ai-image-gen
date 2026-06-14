@@ -1,6 +1,5 @@
-// 任务查询接口（用于 Nano Banana 异步任务轮询）
-
-const BASE_URL = 'https://xibapi.com';
+// 任务查询（用于 Nano Banana 异步轮询）
+const BASE = 'https://xibapi.com';
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,7 +14,7 @@ module.exports = async (req, res) => {
   if (!taskId) return res.status(400).json({ error: '缺少 task id' });
 
   try {
-    const resp = await fetch(`${BASE_URL}/v1/videos/${taskId}`, {
+    const resp = await fetch(`${BASE}/v1/videos/${taskId}`, {
       headers: { 'Authorization': `Bearer ${apiKey}` },
     });
     const data = await resp.json();
