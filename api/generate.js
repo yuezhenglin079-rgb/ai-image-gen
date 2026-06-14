@@ -1,6 +1,6 @@
-// 小扳手 AI 生图 - 后端代理接口
-// OpenAI 格式: /v1/images/generations (同步)
-// Nano Banana:  /v1/videos (异步，需轮询)
+// 小扳手 AI 生图 - 后端代理接口（混合模式）
+// image2: 同步 /v1/images/generations（需较长超时）
+// nano_banana: 异步 /v1/videos（提交后轮询）
 
 const BASE = 'https://xibapi.com';
 
@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
   if (!prompt) return res.status(400).json({ error: '缺少 prompt 参数' });
 
   try {
-    // --- GPT-image2 (同步) ---
+    // --- GPT-image2: 同步 /v1/images/generations ---
     if (model === 'image2') {
       const body = { model: 'image2', prompt };
       if (size) body.size = size;
@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
       return res.status(resp.ok ? 200 : resp.status).json(data);
     }
 
-    // --- Nano Banana (异步) ---
+    // --- Nano Banana: 异步 /v1/videos ---
     if (model.startsWith('nano_banana')) {
       const body = { model, prompt, aspect_ratio: aspect_ratio || '1:1' };
       if (images?.length) body.images = images;
